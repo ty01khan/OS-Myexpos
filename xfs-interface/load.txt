@@ -1,0 +1,6 @@
+load --init $HOME/myexpos/expl/samples/stg11_assign1.xsm
+load --library $HOME/myexpos/expl/stg11_assign3.lib
+load --int=10 $HOME/myexpos/spl/spl_progs/haltprog.xsm
+load --exhandler $HOME/myexpos/spl/spl_progs/haltprog.xsm
+load --os $HOME/myexpos/spl/spl_progs/os_startup10.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/sample_timer11.xsm

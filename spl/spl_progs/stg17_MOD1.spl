@@ -1,0 +1,67 @@
+//Implementing Process Manager Module (Module-1)
+alias functionNum R1;
+alias currPID R2;
+
+//Free User Area Page (PID)
+if (functionNum == 2) then
+	alias pageNum R3;
+	pageNum = [PROCESS_TABLE + (currPID * 16) + 11];
+	
+	//Release page (pageNum)
+	multipush(R1, R2, R3);
+	R1 = 2;
+	R2 = pageNum;
+	call MOD_2;
+	multipop(R1, R2, R3);
+	return;
+endif;
+
+//Exit Process (PID)
+if (functionNum == 3) then
+	//Invoking Free Page Table function
+	multipush(R1, R2);
+	R1 = 4;
+	R2 = currPID;
+	call MOD_1;
+	multipop(R1, R2);
+
+	//Invoking Free user Area Page function
+	multipush(R1, R2);
+	R1 = 2;
+	R2 = currPID;
+	call MOD_1;
+	multipop(R1, R2);
+	
+	[PROCESS_TABLE + (currPID * 16) + 4] = TERMINATED;
+	return;
+endif;
+
+//Free Page Table (PID)
+if (functionNum == 4) then
+	alias entry R3;
+	alias pageNum R4;
+	entry = 0;
+	while (entry < 10) do
+		//Invalidating all the entry of Page Table
+		pageNum = [PTBR + (2 * entry)];
+		if (entry < 2) then
+			[PTBR + (2 * entry)] = -1;
+			[PTBR + (2 * entry) + 1] = "0000";
+			entry = entry + 1;
+			continue;
+		endif;
+		
+		if(pageNum != -1) then
+			//Release Page (pageNum)
+			multipush(R1, R2, R3, R4);
+			R1 = 2;
+			R2 = pageNum;
+			call MOD_2;
+			multipop(R1, R2, R3, R4);
+			[PTBR + (2 * entry)] = -1;
+			[PTBR + (2 * entry) + 1] = "0000";
+		endif;
+		entry = entry + 1;
+	endwhile;
+	return;
+endif;

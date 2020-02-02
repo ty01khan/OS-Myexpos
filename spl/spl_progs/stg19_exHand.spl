@@ -1,0 +1,89 @@
+//Implementing Exception Handler
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = -1;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11]*512 -1;
+backup;
+
+multipush(EIP);
+
+//If cause is other than page fault(EC!=0) or if  user stack is full than invoke Exit Process to halt, then invoke the scheduler
+
+alias userSP R0;
+userSP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+alias cause EC;
+if((cause != 0) || (userSP >= (PTLR * 512) - 1)) then
+	print "Exit";
+	
+	R1 = 3;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	call MOD_1;
+	
+	alias Pid R3;
+	Pid = 1;
+	while (Pid < 16) do
+		if([PROCESS_TABLE + (Pid * 16) + 4] != TERMINATED) then
+			call MOD_5;
+		endif;
+		Pid = Pid + 1;
+	endwhile;
+	halt;
+endif;
+
+//If page fault cause is code page then, get code page and set the auxiliary information to "1110"
+
+alias pageFaultNum EPN;
+
+//Code Page fault
+if((pageFaultNum >= 4) && (pageFaultNum < 8)) then
+	alias Pid R1;
+	alias blockNum R2;
+	alias pageNum R3;
+	
+	Pid = [SYSTEM_STATUS_TABLE + 1];
+	blockNum = [INODE_TABLE + (Pid * 16) + 8 + pageFaultNum - 4];
+	
+	//Get Code Page function (blockNum), (pageNum)
+	multipush(R0, R1, R2, EPN);
+	R1 = 5;
+	R2 = blockNum;
+	call MOD_2;
+	R3 = R0;	//return value pageNum is in R0 and assigning to R3
+	multipop(R0, R1, R2, EPN);
+	[PTBR + (2 * pageFaultNum)] = R3;
+	[PTBR + (2 * pageFaultNum) + 1] = "1100";
+endif;
+
+//If page fault cause is heap page then, get 2 free page and set the auxiliary information to "1110"
+
+//Heap Page fault
+if((pageFaultNum >= 2) && (pageFaultNum < 4)) then
+	alias pageNum R1;
+	
+	//Get Free Page function twice (nil), (pageNum)
+	multipush(R0, EPN);
+	R1 = 1;
+	call MOD_2;
+	pageNum = R0;
+	multipop(R0, EPN);
+	[PTBR + 4] = pageNum;
+	[PTBR + 5] = "1110";
+	
+	multipush(R0, EPN);
+	R1 = 1;
+	call MOD_2;
+	pageNum = R0;
+	multipop(R0, EPN);
+	[PTBR + 6] = pageNum;
+	[PTBR + 7] = "1110";
+endif;
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+multipop(EIP);
+restore;
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+SP = SP + 1;
+R7 = [PTBR + (2 * (SP / 512))] * 512 + SP % 512;
+[[PTBR + (2 * (SP / 512))] * 512 + SP % 512] = EIP;
+ireturn;

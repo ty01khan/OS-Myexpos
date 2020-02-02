@@ -1,0 +1,26 @@
+type
+	student
+	{
+		string name;
+		int marks;
+	}
+endtype
+
+int main()
+{
+decl
+	student S;
+	int temp;
+enddecl
+
+begin
+	temp = initialize();	//initializing heap memory
+	S = alloc();			//allocating memory
+	S.name = "John";
+	S.marks = 89;
+	write(S.name);
+	write(S.marks);
+	return 0;
+end
+}
+

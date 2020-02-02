@@ -1,0 +1,109 @@
+//Implementing Module 0 (Resource Manager Module)
+//For Terminal Handling
+
+alias functionNum R1;
+alias currentPID R2;
+
+//Acquire Semaphore (PID) (semTabIndex or -1)
+if (functionNum == 6) then
+	alias semEntry R3;
+	alias procCount R4;
+	semEntry = 0;
+	while(semEntry < MAX_SEM_COUNT) do
+		if([SEMAPHORE_TABLE + (4 * semEntry) + 1] == -1) then
+			break;
+		endif;
+		semEntry = semEntry + 1; 
+	endwhile;
+	print(currentPID);
+	print("ACQUIRES");
+	print(semEntry);
+	[SEMAPHORE_TABLE + (4 * semEntry) + 1] = 1;
+	[SEMAPHORE_TABLE + (4 * semEntry)] = -1;
+	R0 = semEntry;
+endif;
+
+//Release Semaphore (semTabIndex, PID) (0 or -1)
+if(functionNum == 7) then
+	alias currPID R3;
+	alias semTabInd R4;
+	semTabInd = currentPID;
+	alias entry R5;
+	entry = currPID + 1;
+	alias State R6;
+	if([SEMAPHORE_TABLE + (4 * semTabInd)] == currPID) then
+		[SEMAPHORE_TABLE + (4 * semTabInd)] = -1;
+		while(entry < 16) do
+			State = PROCESS_TABLE + (entry * 16) + 4;
+			if(entry == currPID) then
+				break;
+			endif;
+			if([State] == WAIT_SEMAPHORE && [State + 1] == semTabInd)
+			then
+				print(entry);
+				print("READY");
+				[State] = READY;
+				break;
+			endif;
+			entry = entry + 1;
+			if(entry == 16) then
+				entry = 1;
+			endif;
+		endwhile;
+	endif;
+	[SEMAPHORE_TABLE + (4 * semTabInd) + 1] = [SEMAPHORE_TABLE + (4 * semTabInd) + 1] - 1;
+endif;
+
+//Acquire Disk
+if (functionNum == 3) then
+	while ([DISK_STATUS_TABLE] == 1) do
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = WAIT_DISK;
+		
+		multipush(R1, R2);
+		call MOD_5;
+		multipop(R1, R2);
+	endwhile;
+	
+	//When the disk is finally free, the process is woken up by the disk interrupt handler
+	[DISK_STATUS_TABLE] = 1;
+	[DISK_STATUS_TABLE + 4] = currentPID;
+	return;
+endif;
+
+//Acquire Terminal
+if (functionNum == 8) then
+	//Current process wait in a loop until terminal is free
+	if ([TERMINAL_STATUS_TABLE] == 1) then
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = WAIT_TERMINAL;
+		multipush(R1, R2);
+		call MOD_5;
+		multipop(R1, R2);
+	endif;
+	
+	[TERMINAL_STATUS_TABLE] = 1;
+	[TERMINAL_STATUS_TABLE + 1] = currentPID;
+	return;
+endif;
+
+//Release Terminal
+if (functionNum == 9) then
+	if (currentPID != [TERMINAL_STATUS_TABLE + 1]) then
+		//process is trying to release the terminal without acquiring it
+		R0 = -1;
+		return;
+	endif;
+	
+	[TERMINAL_STATUS_TABLE] = 0;	//state table to 0(terminal is released)
+	
+	alias Pid R0;
+	Pid = 1;
+	while(Pid < 16) do
+		if ([PROCESS_TABLE + (16*Pid) + 4] == WAIT_TERMINAL) then
+			[PROCESS_TABLE + (16*Pid) + 4] = READY;
+		endif;
+		Pid = Pid + 1;
+	endwhile;
+	R0 = 0; //Success
+	return;
+endif;
+return;

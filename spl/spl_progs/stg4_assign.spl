@@ -1,0 +1,11 @@
+alias counter R0;
+alias sum_sqr R1;
+sum_sqr = 0;
+counter = 1;
+
+while(counter <= 20) do
+	sum_sqr = sum_sqr + (counter*counter);
+	counter = counter + 1;
+endwhile;
+print sum_sqr;
+

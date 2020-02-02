@@ -1,0 +1,137 @@
+//Implementing Process Manager Module (Module-1)
+alias functionNum R1;
+alias currPID R2;
+
+//Get Pcb Entry
+if (functionNum == 1) then
+	currPID = 0;
+	R0 = -1;
+	
+	while (currPID < 16) do
+		//if status is Terminated then it's table entry is free
+		if ([PROCESS_TABLE + (currPID * 16) + 4] == TERMINATED) then
+			[PROCESS_TABLE + (currPID * 16) + 4] = ALLOCATED;
+			[PROCESS_TABLE + (currPID * 16) + 14]  = PAGE_TABLE_BASE + (20 * currPID);
+			[PROCESS_TABLE + (currPID * 16) + 15]  = 10;	//PTLR
+			R0 = currPID;	//return the index to the caller
+			break;
+		endif;
+		currPID = currPID + 1;
+	endwhile;
+	return;
+endif;
+
+//Free User Area Page
+if (functionNum == 2) then
+	alias pageNum R3;
+	pageNum = [PROCESS_TABLE + (currPID * 16) + 11];
+	
+	//Releasing Semaphore
+	alias ppPageNum R4;
+	ppPageNum = pageNum*512 + 512;
+	alias pprEntry R5;
+	pprEntry = 0;
+	while(pprEntry < 8) do
+		if([ppPageNum - (2 * pprEntry) - 2] == 1) then
+			//Release Semaphore finction (semTabInd, PID) (0 or -1)
+			multipush(R1, R2, R3, R4, R5);
+			R1 = 7;
+			R2 = [ppPageNum - (2 * pprEntry) - 1];
+			R3 = currPID;
+			call MOD_0;
+			multipop(R1, R2, R3, R4, R5);
+		endif;
+		pprEntry = pprEntry + 1;
+	endwhile;
+	
+	//Release Page(pageNum)
+	multipush(R1, R2, R3);
+	R1 = 2;
+	R2 = pageNum;
+	call MOD_2;
+	multipop(R1, R2, R3);
+	return;
+endif;
+
+//Exit Process Function
+if (functionNum == 3) then
+	//Free Page Table function(PID)
+	multipush(R1, R2);
+	R1 = 4;
+	call MOD_1;
+	multipop(R1, R2);
+
+	//Free user Area Page function(PID)
+	multipush(R1, R2);
+	R1 = 2;
+	call MOD_1;
+	multipop(R1, R2);
+	
+	[PROCESS_TABLE + (currPID * 16) + 4] = TERMINATED;
+	
+	if([PROCESS_TABLE + (currPID * 16) + 9]  != 9) then
+		alias cnt R3;
+		alias State R4;
+		cnt = 1;
+		while(cnt < 16) do
+			State = PROCESS_TABLE + (cnt* 16) + 4; 
+			if(([State] == WAIT_PROCESS) && ([State + 1] == currPID)) then
+				[State] = READY;
+			endif;
+			
+			if([PROCESS_TABLE + (cnt * 16) + 2] == currPID) then
+				[PROCESS_TABLE + (cnt * 16) + 2] = -1; 
+			endif;
+			cnt = cnt + 1;  
+		endwhile;
+	endif;
+	return;
+endif;
+
+//Free Page Table
+if (functionNum == 4) then
+	//If any of heap and stack, valid entries are found, invoke the Release Block function
+	alias entry R3;
+	alias pageNum R4;
+	entry = 0;
+	while (entry < 10) do
+		pageNum = [PTBR + (2 * entry)];
+		[PTBR + (2 * entry)] = -1;
+		[PTBR + (2 * entry) + 1] = "0000";
+		
+		if(entry < 2) then
+			entry = entry + 1;
+			continue;
+		endif;
+		
+		//Release Page function(pageNum)
+		multipush(R1, R2, R3, R4);
+		R1 = 2;
+		R2 = pageNum;
+		call MOD_2;
+		multipop(R1, R2, R3, R4);
+		
+		//Invalidate all entries of Disk Map Table
+		if((entry > 3) && (entry < 8)) then
+			[DISK_MAP_TABLE + (currPID * 10) + entry] = -1;
+			entry = entry + 1;
+			continue;
+		endif;
+		
+		if([DISK_MAP_TABLE + (currPID * 10) + entry] != -1) then
+		//Release Block function(blockNum, PID)
+			multipush(R1, R2, R3, R4);
+			R1 = 4;
+			R2 = [DISK_MAP_TABLE + (currPID * 10) + entry];
+			R3 = currPID;
+			call MOD_2;
+			multipop(R1, R2, R3, R4);
+		endif;
+		
+		//Invalidate all entries of Disk Map Table
+		[DISK_MAP_TABLE + (currPID * 10) + entry] = -1;
+		
+		entry = entry + 1;
+	endwhile;
+	return;
+endif;

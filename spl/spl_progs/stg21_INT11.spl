@@ -1,0 +1,81 @@
+//Implementation of INT-11
+//Wait, Signal, Getpid and Getppid System Call
+
+alias userSP R0;
+userSP = SP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 11]*512 - 1;
+
+alias physicalPageNum R1;
+alias offset R2;
+alias SysCallNumAddr R3;
+physicalPageNum = [PTBR + 2 * ((userSP - 5) / 512)];
+offset = (userSP - 5) % 512;
+SysCallNumAddr = (physicalPageNum * 512) + offset;
+alias SysCallNum R4;
+SysCallNum= [SysCallNumAddr];
+//SysCallNum = [[PTBR + 2 * ((userSP - 5) / 512)]*512 + (userSP - 5) % 512];
+
+//Wait System Call
+if(SysCallNum == 13) then
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 13;
+	 physicalPageNum = [PTBR + 2 * ((userSP - 4) / 512)];
+	offset = (userSP - 4) % 512;
+	alias PID R5;
+	PID = [(physicalPageNum * 512) + offset];
+	
+	//Check for the valid PID and TERMINATED State
+	if((PID < 0) || (PID >= 16) || ([PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 4] == TERMINATED)) then
+		[([PTBR + 2 * ((userSP - 1) / 512)]*512) + ((userSP - 1) % 512)] = -1;
+		SP = userSP; 
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 0;
+	endif;
+	
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 4] = WAIT_PROCESS;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 5] = PID;
+	
+	multipush(R0);
+	call MOD_5;
+	multipop(R0);
+	
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 0;
+	[([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512)] = 0;
+endif;
+
+//Signal System Call
+if(SysCallNum == 14) then
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 14;
+	alias entries R5;
+	alias PID R6;
+	PID = [SYSTEM_STATUS_TABLE + 1];
+	entries = 1;
+	while(entries < 16) do
+		alias State R7;
+		State = PROCESS_TABLE + (entries * 16) + 4;
+		if(([State] == WAIT_PROCESS) && ([State + 2] == PID)) then
+			[PROCESS_TABLE + (entries  * 16) + 4] = READY;
+		endif;
+		entries = entries + 1;
+	endwhile;
+	
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 0;
+	[([PTBR + 2 *  ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512)] = 0;
+endif;
+
+//Getpid System Call
+if(SysCallNum == 11) then
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 11;	
+	[[PTBR + 2 * ((userSP - 1) / 512)] * 512 + ((userSP - 1) % 512)] = [SYSTEM_STATUS_TABLE + 1];
+endif;
+
+//Getppid System Call
+if(SysCallNum == 12) then
+	alias PPID R1;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 12;
+	PPID = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 2];
+	[([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512)] = PPID;
+endif;
+
+SP = userSP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]  * 16) + 9] = 0;
+ireturn;

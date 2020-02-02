@@ -1,0 +1,11 @@
+alias counter R0;
+alias fact R2;
+counter = 1;
+fact = 1;
+
+while(counter <= 6) do
+	fact = fact * counter;
+	breakpoint;
+	counter = counter + 1;
+endwhile;
+print fact;

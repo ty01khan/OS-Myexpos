@@ -1,0 +1,5 @@
+MOV R1, "3"
+MOV R2, 3
+EQ R1, R2
+PORT P1, R1
+OUT

@@ -1,0 +1,29 @@
+int main()
+{
+	decl
+	int num1, num2, temp;
+	str string;
+	enddecl
+	begin
+		string = "Enter 1st No.";
+		temp = exposcall("Write", -2, string);
+		read(num1);
+		
+		string = "Enter 2nd No.";
+		temp = exposcall("Write", -2, string);
+		read(num2);
+	
+		while (num2 > 0) do
+			temp = num1;
+			num1 = num2;
+			num2 = temp % num2;
+		endwhile;
+		
+		string = "GCD is";
+		temp = exposcall("Write", -2, string);
+		temp = exposcall("Write", -2, num1);
+		return 0;
+	end
+}
+
+

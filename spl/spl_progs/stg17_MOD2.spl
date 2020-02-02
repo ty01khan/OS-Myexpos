@@ -1,0 +1,61 @@
+//Implementing Memory Manager Module (Module-2)
+
+//[SYSTEM_STATUS_TABLE + 2] is MEM_FREE_COUNT
+//[SYSTEM_STATUS_TABLE + 3] is WAIT_MEM_COUNT
+
+alias functionNum R1;
+alias pageNum R2;
+
+//Get Free Page
+if (functionNum == 1) then
+	//increment WAIT_MEM_COUNT
+	[SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1;
+	
+	alias MemFreeCnt R3;
+	MemFreeCnt = [SYSTEM_STATUS_TABLE + 2];
+	
+	//while no memory page is free
+	while (MemFreeCnt == 0) do
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = WAIT_MEM;
+		
+		//Invoking Context Switch Module
+		multipush(R1, R2, R3);
+		call MOD_5;
+		multipop(R1, R2, R3);
+	endwhile;
+	
+	[SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] - 1;
+	[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+	
+	pageNum = 0;
+	while (pageNum < MAX_MEM_PAGE) do
+		if ([MEMORY_FREE_LIST + pageNum] == 0) then
+			R0 = pageNum;
+			[MEMORY_FREE_LIST + pageNum] = 1;
+			break;
+		endif;
+		pageNum = pageNum + 1;
+	endwhile;
+	breakpoint;
+	return;
+endif;
+
+//Release Page
+if (functionNum == 2) then
+	alias Pid R3;
+	[MEMORY_FREE_LIST + pageNum] = [MEMORY_FREE_LIST + pageNum] - 1;
+	
+	//if no process is using the page
+	if ([MEMORY_FREE_LIST + pageNum] == 0) then
+		[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] + 1;
+		Pid = 1;
+		while(Pid < 16) do
+			if([PROCESS_TABLE + (Pid * 16) + 4] == WAIT_MEM) then
+				[PROCESS_TABLE + (Pid * 16) + 4] = READY;
+			endif;
+			Pid = Pid + 1;
+		endwhile;
+	endif;
+	breakpoint;
+	return;
+endif;

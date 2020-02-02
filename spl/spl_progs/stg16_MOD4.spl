@@ -1,0 +1,56 @@
+//Implementing Module 4 (Device Manager Module)
+//Implementing Terminal Write function and Terminal Read Function
+
+alias functionNum R1;
+alias currentPID R2;
+
+// Terminal Write
+if (functionNum == 3) then
+	//Calling Acquire Terminal
+	alias word R3;
+	multipush(R1, R2, R3);
+	R1 = 8;
+	R2 = currentPID;
+	call MOD_0;
+	multipop(R1, R2, R3);
+	
+	print word;
+	
+	//Calling Release Terminal
+	multipush(R1, R2, R3, R4);
+	R1 = 9;
+	R2 = currentPID;
+	call MOD_0;
+	R4 = R0;
+	multipop(R1, R2, R3, R4);
+	return;
+endif;
+
+// Terminal Read
+if (functionNum == 4) then
+	//Calling Acquire Terminal
+	alias wordADD R3;
+	multipush(R1, R2, R3);
+	R1 = 8;
+	R2 = currentPID;
+	call MOD_0;
+	multipop(R1, R2, R3);
+	read;
+	
+	[PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_TERMINAL;
+	
+	//Invoking the Context Switch Module
+	multipush(R1, R2, R3);
+	call MOD_5;	//invoking scheduler
+	multipop(R1, R2, R3);
+	
+	//converting logical address to physical address of wordAdd
+	alias PhyAdd R4;
+	PhyAdd = ([PTBR + 2*(wordADD / 512)] * 512) + (wordADD % 512);
+	
+	//storing the input buffer value to physical address of word
+	[PhyAdd] = [PROCESS_TABLE + (currentPID *16) + 8];
+	return;
+endif;
+
+return;

@@ -1,0 +1,9 @@
+load --init $HOME/myexpos/expl/samples/stg13_assign1_odd.xsm
+load --module 7 $HOME/myexpos/spl/spl_progs/boot_module.xsm
+load --idle $HOME/myexpos/expl/samples/stg13_assign1_even.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=10 $HOME/myexpos/spl/spl_progs/haltprog.xsm
+load --exhandler $HOME/myexpos/spl/spl_progs/haltprog.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/sample_timer13.xsm
+load --int=7 $HOME/myexpos/spl/spl_progs/sample_INT7.xsm
+load --os $HOME/myexpos/spl/spl_progs/os_startup13.xsm

@@ -1,0 +1,8 @@
+load --init $HOME/myexpos/expl/samples/stg12_assign1_init.xsm
+load --idle $HOME/myexpos/expl/samples/stg12_assign1_idle.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=10 $HOME/myexpos/spl/spl_progs/haltprog.xsm
+load --exhandler $HOME/myexpos/spl/spl_progs/haltprog.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/sample_timer12.xsm
+load --int=7 $HOME/myexpos/spl/spl_progs/sample_INT7.xsm
+load --os $HOME/myexpos/spl/spl_progs/stg12_assign1_os_startup.xsm

@@ -1,0 +1,29 @@
+//loading INIT program from disk to memory
+loadi(4, 7);	// load disk block 7 to memory page 65
+loadi(5, 8);	// load disk block 8 to memory page 66
+
+//loading the INT10 module from disk to memory to exit
+loadi(22, 35);
+loadi(23, 36);
+
+//loding the exception handler routine from the disk to memory
+loadi(2, 15);
+loadi(3, 16);
+
+//PAGE_TABLE_BASE = 29696
+//2 page for storing INIT prog code(loaded from disk 7-8) and 1 page for stack. So PTLR = 3
+PTBR = PAGE_TABLE_BASE;
+PTLR = 3;
+
+//page number 65 and 66 is for code and 76 is for stack
+[PTBR + 0] = 4;			//set first word of page 4 to address PTBR
+[PTBR + 1] = "0100";	//second word of page 4
+[PTBR + 2] = 5;			//first word
+[PTBR + 3] = "0100";	//sets the code page to read only
+[PTBR + 4] = 8;			//first word
+[PTBR + 5] = "0110";	//sets the stack read/write
+
+[8 * 512] = 0;			//set value at top of stack to 0
+SP = 2 * 512;			//Stack is in third page
+
+ireturn;				//transfer control to user program 

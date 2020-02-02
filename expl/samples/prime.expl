@@ -1,0 +1,28 @@
+int main()
+{
+	decl
+		int temp, num, i, j, q, r;
+	enddecl
+	
+	begin
+		num = 2;
+		while (num <= 100) do
+			q = num/2;
+			i = 2;
+			j = 0;
+		 	while (i <= q) do
+		 		r = num % i;
+		 		if (r == 0) then
+		 			j = j+1;
+		 			break;
+		 		endif;
+		 		i = i+1;
+		 	endwhile;
+		 	if (j == 0) then
+		 		temp = exposcall ("Write", -2, num);
+		 	endif;
+		 	num = num + 1;
+		endwhile;
+		return 0;
+	end
+}

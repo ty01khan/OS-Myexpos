@@ -1,0 +1,144 @@
+//Implementing Fork System Call
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 8;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11]*512 - 1;
+
+alias pageNum R1;
+alias childPID R2;
+
+pageNum = 1;
+//Get Pcb Entry (nil), (index of free Pcb = child PID)
+R1 = 1;
+call MOD_1;
+childPID = R0;
+
+if (childPID == -1) then
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+	SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+	ireturn;
+endif;
+
+alias parnPID R3;
+
+parnPID = [SYSTEM_STATUS_TABLE + 1];
+
+if([PTBR + 4] == -1) then
+	//Allocating Heap pages
+	//Get Free Page function (nil), (Free page Num)
+	multipush(R2, R3);
+	R1 = 1;
+	call MOD_2;
+	pageNum = R0;
+	multipop(R2, R3);
+	[PTBR + 4] = pageNum;
+	[PTBR + 5] = "1110";
+	
+	multipush(R2, R3);
+	R1 = 1;
+	call MOD_2;
+	pageNum = R0;
+	multipop(R2, R3);
+	[PTBR + 6] = pageNum;
+	[PTBR + 7] = "1110";
+endif;
+
+//Child Process Memory pages (2 Stack, 1 User Area)
+
+//Stack Pages
+alias PtBr R4;
+PtBr = [PROCESS_TABLE + (childPID * 16) + 14];
+
+//Get Free Page function (nil), (Free page Num)
+multipush(R2, R3, R4);
+R1 = 1;
+call MOD_2;
+pageNum = R0;
+multipop(R2, R3, R4);
+
+[PtBr + 16] = pageNum;
+
+multipush(R2, R3, R4);
+R1 = 1;
+call MOD_2;
+pageNum = R0;
+multipop(R2, R3, R4);
+
+[PtBr + 18] = pageNum;
+
+//User Area
+//Get Free Page function (nil), (Free page Num)
+multipush(R2, R3, R4);
+R1 = 1;
+call MOD_2;
+pageNum = R0;
+multipop(R2, R3, R4);
+
+[PROCESS_TABLE + (childPID * 16) + 11] = pageNum;
+
+[PROCESS_TABLE + (childPID * 16) + 3] = [PROCESS_TABLE + (parnPID * 16) + 3];
+[PROCESS_TABLE + (childPID * 16) + 6] = [PROCESS_TABLE + (parnPID * 16) + 6];
+[PROCESS_TABLE + (childPID * 16) + 10] = [PROCESS_TABLE + (parnPID * 16) + 10];
+[PROCESS_TABLE + (childPID * 16) + 7] = [PROCESS_TABLE + (parnPID * 16) + 7];	//child & parent(both are running same program)
+[PROCESS_TABLE + (childPID * 16) + 13] = [PROCESS_TABLE + (parnPID * 16) + 13];
+
+[PROCESS_TABLE + (childPID * 16) + 9] = 0;
+[PROCESS_TABLE + (childPID * 16) + 0] = 0;
+[PROCESS_TABLE + (childPID * 16) + 12] = 0;
+[PROCESS_TABLE + (childPID * 16) + 2] = parnPID;
+[PROCESS_TABLE + (childPID * 16) + 4] = CREATED;
+[PROCESS_TABLE + (childPID * 16) + 11] = pageNum;
+
+alias cnt R5;
+cnt = 0;
+while (cnt < 10) do
+	[DISK_MAP_TABLE + (childPID * 10) + cnt] = [DISK_MAP_TABLE + (parnPID * 10) + cnt];
+	cnt = cnt + 1;
+endwhile;
+
+cnt = 0;
+while (cnt < 16) do
+	[PtBr + cnt] = [PTBR + cnt];
+	cnt = cnt + 1;
+endwhile;
+[PtBr + 17] = [PTBR + 17];
+[PtBr + 19] = [PTBR + 19];
+
+cnt = 0;
+while (cnt < 8) do
+	[MEMORY_FREE_LIST + [PTBR + (2 * cnt)]] = [MEMORY_FREE_LIST + [PTBR + (2 * cnt)]] + 1;
+	cnt = cnt + 1;
+endwhile;
+
+alias userSP R5;
+alias addParnSP R6;
+alias addChildSP R7;
+alias finalSP R8;
+
+userSP = 8 * 512;
+finalSP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+//Stack Copy(word by word)
+while (userSP <= finalSP) do
+	addParnSP = [PTBR + 2*(userSP/512)] * 512 + (userSP % 512);
+	addChildSP = [PtBr + 2*(userSP/512)] * 512 + (userSP % 512);
+	[addChildSP] = [addParnSP];
+	userSP = userSP + 1;
+endwhile;
+
+userSP = [PROCESS_TABLE + (childPID* 16) + 11]*512 - 1;
+userSP = userSP + 1;
+[userSP] = BP;
+
+[PROCESS_TABLE + (childPID * 16) + 12] = userSP; 
+
+alias childSP R6;
+alias parnSP R5;
+childSP = [PROCESS_TABLE + (childPID * 16) + 13];
+parnSP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+[[PTBR + 2 * ((parnSP - 1) / 512)] * 512 + (parnSP - 1) % 512] = childPID;
+[[PtBr + 2 * ((childSP - 1) / 512)] * 512 + (childSP - 1) % 512] = 0;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+ireturn;

@@ -1,0 +1,12 @@
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;				//saving the current value of SP into the Process Table entry
+
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;		//setting SP to (UArea Page Number * 512) - 1
+
+backup; 																	//saving the user context to the kernal stack using backup instruction
+
+print "Process ID";															//print process id
+print [SYSTEM_STATUS_TABLE + 1];											//printing PID value
+
+restore;
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13]; 				//restoring the user context from the kernal stack and set SP to the user SP saved in process table
+ireturn;

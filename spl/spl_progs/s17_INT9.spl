@@ -1,0 +1,133 @@
+//Implementing Exec System Call (INT-9)
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 9;	//Setting ModeFlag to the sysCall no. of exec
+
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11]*512 -1;
+
+alias physicalPageNum R1;
+alias offset R2;
+alias fileDescPhysicalAddr R3;
+physicalPageNum = [PTBR + 2 * ((userSP - 4) / 512)];
+offset = (userSP - 4) % 512;
+fileDescPhysicalAddr = (physicalPageNum * 512) + offset;
+alias fileDescriptor R4;
+fileDescriptor = [fileDescPhysicalAddr];
+
+alias found R5;
+found = 0;
+alias inodeInd R6;
+inodeInd = 0;
+
+alias Ftype R7;
+alias Fname R8;
+
+while (inodeInd < MAX_FILE_NUM) do
+	Ftype = [INODE_TABLE + (inodeInd * 16)];
+	Fname = [INODE_TABLE + (inodeInd * 16) + 1];
+	if((Ftype == EXEC) && (Fname == fileDescriptor)) then
+		found = 1;
+		break;
+	endif;
+	inodeInd = inodeInd + 1;
+endwhile;
+
+if (found == 0) then
+	found = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
+	[found] = -1;
+else
+	alias Pid R7;
+	Pid = [SYSTEM_STATUS_TABLE + 1];
+	
+	//Exit Process Function
+	multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+	R1 = 3;
+	R2 = Pid;
+	call MOD_1;	//calling Process Manager Module(Exit Process)
+	multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+	
+	// User Page Area
+	Fname = [PROCESS_TABLE + (Pid) * 16 + 11];
+	[MEMORY_FREE_LIST + Fname] = [MEMORY_FREE_LIST + Fname] + 1;
+	[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;	//decrementing MEM FREE COUNT
+	
+	SP = (Fname * 512) - 1;	//initilising kernal stack for new process
+	
+	[PROCESS_TABLE + (Pid * 16) + 4] = RUNNING;
+	[PROCESS_TABLE + (Pid * 16) + 7] = inodeInd; //inode index
+	
+	//Library
+	[PTBR + 0] = 63;
+	[PTBR + 1] = "0100";
+	[PTBR + 2] = 64;
+	[PTBR + 3] = "0100";
+
+	alias newPage R8;
+	
+	//Get Free Page Function
+	multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+	R1 = 1;
+	call MOD_2;	//calling memory manager module
+	newPage = R0;
+	multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+	[PTBR + 4] = newPage;
+	[PTBR + 5] = "0110";
+	
+	multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+	R1 = 1;
+	call MOD_2;	//calling memory manager module
+	newPage = R0;
+	multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+	[PTBR + 6] = newPage;
+	[PTBR + 7] = "0110";
+	
+	multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+	R1 = 1;
+	call MOD_2;	//calling memory manager module
+	newPage = R0;
+	multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+	[PTBR + 16] = newPage;
+	[PTBR + 17] = "0110";
+
+
+	multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+	R1 = 1;
+	call MOD_2;	//calling memory manager module
+	newPage = R0;
+	multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+	[PTBR + 18] = newPage;
+	[PTBR + 19] = "0110";
+
+	alias cnt R9;
+	alias block R10;
+	cnt = 0;
+	while (cnt < 4) do
+		if ([INODE_TABLE + (inodeInd * 16) + 8 + cnt] == -1)
+		then
+			break;
+		endif;
+
+		block = [INODE_TABLE + (inodeInd * 16) + 8 + cnt];
+
+		multipush(R0, R1, R2, R3, R4, R5, R6, R7, R9, R10);
+		R1 = 1;
+		call MOD_2;	//calling memory manager module
+		newPage = R0;
+		multipop(R0, R1, R2, R3, R4, R5, R6, R7, R9, R10);
+		[PTBR + (4 + cnt) * 2] = newPage;
+		[PTBR + (4 + cnt) * 2 + 1] = "0100";
+		loadi(newPage, block);
+		cnt = cnt + 1;
+	endwhile;
+	[[PTBR + 16] * 512] = [[PTBR + 8] * 512 + 1];
+	found = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
+	[found] = 0;
+endif;
+	
+SP = 8 * 512;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+ireturn;

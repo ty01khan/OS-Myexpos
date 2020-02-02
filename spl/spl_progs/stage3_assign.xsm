@@ -1,0 +1,9 @@
+MOV R0, 0
+MOV R1, 20
+Loop:
+INR R0
+MOV R2, R0
+PORT P1, R0
+OUT
+EQ R2, R1
+JZ R2, Loop

@@ -1,0 +1,43 @@
+//Implementing Module 0 (Resource Manager Module)
+//For Terminal Handling
+
+alias functionNum R1;
+alias currentPID R2;
+
+//Acquire Terminal
+if (functionNum == 8) then
+	//Current process wait in a loop until terminal is free
+	if ([TERMINAL_STATUS_TABLE] == 1) then
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = WAIT_TERMINAL;
+		multipush(R1, R2);
+		call MOD_5;
+		multipop(R1, R2);
+	endif;
+	
+	[TERMINAL_STATUS_TABLE] = 1;
+	[TERMINAL_STATUS_TABLE + 1] = currentPID;
+	return;
+endif;
+
+//Release Terminal
+if (functionNum == 9) then
+	if (currentPID != [TERMINAL_STATUS_TABLE + 1]) then
+		//process is trying to release the terminal without acquiring it
+		R0 = -1;
+		return;
+	endif;
+	
+	[TERMINAL_STATUS_TABLE] = 0;	//state table to 0(terminal is released)
+	
+	alias Pid R0;
+	Pid = 1;
+	while(Pid < 16) do
+		if ([PROCESS_TABLE + (16*Pid) + 4] == WAIT_TERMINAL) then
+			[PROCESS_TABLE + (16*Pid) + 4] = READY;
+		endif;
+		Pid = Pid + 1;
+	endwhile;
+	R0 = 0; //Success
+	return;
+endif;
+return;

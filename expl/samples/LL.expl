@@ -1,0 +1,58 @@
+type
+	Node
+  	{
+    	int data;
+    	List next;
+  	}
+endtype
+
+decl
+	Node head;
+enddecl
+
+int main()
+{
+  	decl
+    	int length, num, temp;
+    	Node newNode, node;
+    	str string;
+  	enddecl
+
+  	begin
+		num = initialize();
+    
+    	head = null;
+    
+    	string = "Enter N,N num";
+    	temp = exposcall("Write", -2, string);
+    	read(length);
+		
+		node = head;
+		while (length!=0)  do
+			read(num);
+			newNode = alloc();
+			newNode.data = num;
+			newNode.next = null;
+
+			if (head == null) then
+				head = newNode;
+				node = newNode;
+			else
+				node.next = newNode;
+				node = node.next;
+			endif;
+			  
+			length=length-1;
+		endwhile;
+
+		string = "Element of LL";
+		temp = exposcall("Write", -2, string);
+		
+		node = head;
+		while(node != null)  do
+			write(node.data);
+			node = node.next;
+		endwhile;
+		return 0;
+  	end
+}

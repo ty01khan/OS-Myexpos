@@ -1,0 +1,23 @@
+load --init $HOME/myexpos/expl/samples/read_write.xsm
+load --idle $HOME/myexpos/expl/samples/idle.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=8 $HOME/myexpos/spl/spl_progs/stg22_INT8.xsm
+load --int=14 $HOME/myexpos/spl/spl_progs/22_INT14.xsm
+load --int=13 $HOME/myexpos/spl/spl_progs/stg22_INT13.xsm
+load --int=11 $HOME/myexpos/spl/spl_progs/stg22_INT11.xsm
+load --int=15 $HOME/myexpos/spl/spl_progs/stg22_INT15.xsm
+load --int=10 $HOME/myexpos/spl/spl_progs/stg22_INT10.xsm
+load --module 7 $HOME/myexpos/spl/spl_progs/stg22_boot.xsm
+load --int=console $HOME/myexpos/spl/spl_progs/stg22_consINT.xsm
+load --int=disk $HOME/myexpos/spl/spl_progs/stg22_diskINT.xsm
+load --exhandler $HOME/myexpos/spl/spl_progs/stg22_exHandler.xsm
+load --int=6 $HOME/myexpos/spl/spl_progs/stg22_INT6.xsm
+load --int=7 $HOME/myexpos/spl/spl_progs/stg22_INT7.xsm
+load --int=9 $HOME/myexpos/spl/spl_progs/stg22_INT9.xsm
+load --module 0 $HOME/myexpos/spl/spl_progs/22_MOD0.xsm
+load --module 1 $HOME/myexpos/spl/spl_progs/stg22_MOD1.xsm
+load --module 2 $HOME/myexpos/spl/spl_progs/stg22_MOD2.xsm
+load --module 4 $HOME/myexpos/spl/spl_progs/stg22_MOD4.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/timer22.xsm
+load --os $HOME/myexpos/spl/spl_progs/stg22_ostartup.xsm
+load --module 5 $HOME/myexpos/spl/spl_progs/stg22_MOD5.xsm

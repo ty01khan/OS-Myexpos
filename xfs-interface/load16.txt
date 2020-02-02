@@ -1,0 +1,14 @@
+load --init $HOME/myexpos/expl/samples/gcd.xsm
+load --idle $HOME/myexpos/expl/samples/idle.xsm
+load --module 0 $HOME/myexpos/spl/spl_progs/stg16_MOD0.xsm
+load --module 4 $HOME/myexpos/spl/spl_progs/stg16_MOD4.xsm
+load --module 7 $HOME/myexpos/spl/spl_progs/stg16_boot.xsm
+load --module 5 $HOME/myexpos/spl/spl_progs/stg16_schedMOD5.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=10 $HOME/myexpos/spl/spl_progs/haltprogs14.xsm
+load --exhandler $HOME/myexpos/spl/spl_progs/haltprogs14.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/timer16.xsm
+load --int=7 $HOME/myexpos/spl/spl_progs/stg16_INT7.xsm
+load --os $HOME/myexpos/spl/spl_progs/stg16_ostartup.xsm
+load --int=6 $HOME/myexpos/spl/spl_progs/stg16_INT6.xsm
+load --int=console $HOME/myexpos/spl/spl_progs/stg16_consINT.xsm

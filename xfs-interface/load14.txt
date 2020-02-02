@@ -1,0 +1,10 @@
+load --init $HOME/myexpos/expl/samples/even.xsm
+load --idle $HOME/myexpos/expl/samples/idle.xsm
+load --module 7 $HOME/myexpos/spl/spl_progs/stage14_boot.xsm
+load --module 5 $HOME/myexpos/spl/spl_progs/sched_module14.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=10 $HOME/myexpos/spl/spl_progs/haltprogs14.xsm
+load --exhandler $HOME/myexpos/spl/spl_progs/haltprogs14.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/timer14.xsm
+load --int=7 $HOME/myexpos/spl/spl_progs/sample_INT7.xsm
+load --os $HOME/myexpos/spl/spl_progs/os_startup14.xsm

@@ -1,0 +1,25 @@
+//Disk Interrupt Handler
+//When the disk-memory transfer is complete, XSM raises the disk interrupt
+
+breakpoint;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11]*512 - 1;
+backup;
+
+[DISK_STATUS_TABLE] = 0;	//Disk is not busy
+
+//Change all the process to ready in the process table entries
+alias Pid R1;
+while (Pid < 16) do
+	alias Status R2;
+	Status = [PROCESS_TABLE + (Pid * 16) + 4];
+	if (Status == WAIT_DISK) then
+		[PROCESS_TABLE + (Pid * 16) + 4] = READY;
+	endif;
+	Pid = Pid + 1;
+endwhile;
+
+restore;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+breakpoint;
+ireturn;
